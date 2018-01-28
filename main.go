@@ -7,15 +7,6 @@ import (
 )
 
 func main() {
-	fmt.Println("hello world")
-
-	/*
-		authnrequest, err := ioutil.ReadFile("authnrequest.txt")
-		if err != nil {
-			fmt.Print(err)
-		}
-	*/
-
 	type Issuer struct {
 		XMLName     xml.Name `xml:"saml:Issuer"`
 		IssuerValue string   `xml:",chardata"`
@@ -25,6 +16,16 @@ func main() {
 		XMLName     xml.Name `xml:"samlp:NameIDPolicy"`
 		AllowCreate string   `xml:"AllowCreate,attr"`
 		Format      string   `xml:"Format,attr"`
+	}
+
+	type AuthnContextClassRef struct {
+		XMLName                   xml.Name `xml:"saml:AuthnContextClassRef"`
+		AuthnContextClassRefValue string   `xml:",chardata"`
+	}
+
+	type RequestedAuthnContext struct {
+		XMLName              xml.Name `xml:"samlp:RequestedAuthnContext"`
+		AuthnContextClassRef AuthnContextClassRef
 	}
 
 	type Authnrequest struct {
@@ -39,13 +40,17 @@ func main() {
 		Version                       string   `xml:"Version,attr"`
 		Issuer                        Issuer
 		NameIDPolicy                  NameIDPolicy
-		AllowCreate                   string `xml:"samlp:NameIDPolicy,aa,attr"`
-		Format                        string `xml:"Format,attr"`
+		RequestedAuthnContext         RequestedAuthnContext
+		//AllowCreate                   string `xml:"samlp:NameIDPolicy,aa,attr"`
+		//Format                        string `xml:"Format,attr"`
 	}
 
 	var auth Authnrequest
 	var issuer Issuer
 	var nameIDPolicy NameIDPolicy
+
+	var requestedAuthnContext RequestedAuthnContext
+	var authnContextClassRef AuthnContextClassRef
 
 	issuer.IssuerValue = "http://myrealme.test/mts2/sp"
 
@@ -62,6 +67,12 @@ func main() {
 	auth.Version = "2.0"
 	auth.Issuer = issuer
 	auth.NameIDPolicy = nameIDPolicy
+
+	authnContextClassRef.AuthnContextClassRefValue = "urn:nzl:govt:ict:stds:authn:deployment:GLS:SAML:2.0:ac:classes:ModStrength"
+	requestedAuthnContext.AuthnContextClassRef = authnContextClassRef
+
+	auth.RequestedAuthnContext = requestedAuthnContext
+
 	//auth.Format = "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent"
 
 	tmp, err := xml.MarshalIndent(auth, "  ", "    ")
