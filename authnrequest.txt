@@ -1,0 +1,7 @@
+<samlp:AuthnRequest xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" AssertionConsumerServiceIndex="0" Destination="https://mts.realme.govt.nz/logon-mts/mtsEntryPoint" ID="a958a20e059c26d1cfb73163b1a6c4f9" IssueInstant="{{UTC_TIME}}" ProviderName="http://myrealme.test/mts2/sp" Version="2.0">
+  <saml:Issuer>http://myrealme.test/mts2/sp</saml:Issuer>
+  <samlp:NameIDPolicy AllowCreate="true" Format="urn:oasis:names:tc:SAML:2.0:nameid-format:persistent"></samlp:NameIDPolicy>
+  <samlp:RequestedAuthnContext>
+	<saml:AuthnContextClassRef>urn:nzl:govt:ict:stds:authn:deployment:GLS:SAML:2.0:ac:classes:ModStrength</saml:AuthnContextClassRef>
+  </samlp:RequestedAuthnContext>
+</samlp:AuthnRequest>

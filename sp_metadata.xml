@@ -1,0 +1,75 @@
+<md:EntityDescriptor ID="MTS SP" entityID="http://myrealme.test/mts2/sp" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" xmlns:query="urn:oasis:names:tc:SAML:metadata:ext:query" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:xenc="http://www.w3.org/2001/04/xmlenc#">
+	<md:SPSSODescriptor AuthnRequestsSigned="true" WantAssertionsSigned="true" protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+		<md:KeyDescriptor use="signing">
+			<ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+				<ds:X509Data>
+					<ds:X509Certificate>
+MIIDgzCCAmugAwIBAgIEZ2ZIfzANBgkqhkiG9w0BAQsFADByMQswCQYDVQQGEwJO
+WjEQMA4GA1UECBMHVW5rbm93bjEQMA4GA1UEBxMHVW5rbm93bjEQMA4GA1UEChMH
+VW5rbm93bjEQMA4GA1UECxMHVW5rbm93bjEbMBkGA1UEAxMSbXRzLmNsaWVudC5z
+aWduaW5nMB4XDTE2MDMyNDIxNTQzNFoXDTE5MDMyNDIxNTQzNFowcjELMAkGA1UE
+BhMCTloxEDAOBgNVBAgTB1Vua25vd24xEDAOBgNVBAcTB1Vua25vd24xEDAOBgNV
+BAoTB1Vua25vd24xEDAOBgNVBAsTB1Vua25vd24xGzAZBgNVBAMTEm10cy5jbGll
+bnQuc2lnbmluZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANItT07w
+87HLup/Waw+Ek7S6RlJEu9xn1UXVfL84dkLufy21Cklnyzxzd2op9FbUq68jalIa
+9hlguI9B7QqLplIcNOfhTWT+CFz9j0LL3PyOpl+/oDKJdwUPwtzz312fqfWz/vqZ
+Rz9cx0kmJlHUdz97WeD0Iem3px/4lM6nZtJWXF+0olZO5PxNnG/X8W9Y4qPT00FY
+AyHh0s2PUjbOuB9LAf4oWFxzNiluT5vifXLo0AR2u0m46dxxDbplX+G17/Ozs5Pv
+Ew/rBeUsLlgS862KClir16iw43TY6cTuw1fHUmqXuywrFwuKZUi5FX5yahGjKVxP
+oI/xg8QYDJASA5UCAwEAAaMhMB8wHQYDVR0OBBYEFFjGNNt5tDt6KqJcmo/HAv7F
+E2aeMA0GCSqGSIb3DQEBCwUAA4IBAQB1TvX7QbikPh/J2auRT+MWrScwDh9KQ/7c
+VysDKTqGFvQWm+t38hFwjy8DG6/GWzMmlvPzs+cpxxrU4wYINIki3q2XRMU5pNDS
+EWTqvcz+Of4WCNf0Kl6vaiQMo3AGhz36VemJeatiKTMnId9b//QKwG5qx9SGDKmY
+QOpm6Rtvai8oMhIX7Zgdv1pyVOIFvFbj8gC1U5krrwufSjTIZD8Vi0KCVYXLMXad
+BQj0IlNkxjIYgqj0oNhwemLs2vcXm/emYVjIekJVVgaY7E+pUTOkGQqJlLWP5p/G
+4QhF24m0cEw6CaJVbXOuxQPo7u27TCM8FM1SBZEaFdOtVVB8rxO5
+					</ds:X509Certificate>				
+				</ds:X509Data>
+			</ds:KeyInfo>
+		</md:KeyDescriptor>
+		<md:KeyDescriptor use="encryption">
+			<ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+				<ds:X509Data>
+					<ds:X509Certificate>
+MIIDgzCCAmugAwIBAgIEZ2ZIfzANBgkqhkiG9w0BAQsFADByMQswCQYDVQQGEwJO
+WjEQMA4GA1UECBMHVW5rbm93bjEQMA4GA1UEBxMHVW5rbm93bjEQMA4GA1UEChMH
+VW5rbm93bjEQMA4GA1UECxMHVW5rbm93bjEbMBkGA1UEAxMSbXRzLmNsaWVudC5z
+aWduaW5nMB4XDTE2MDMyNDIxNTQzNFoXDTE5MDMyNDIxNTQzNFowcjELMAkGA1UE
+BhMCTloxEDAOBgNVBAgTB1Vua25vd24xEDAOBgNVBAcTB1Vua25vd24xEDAOBgNV
+BAoTB1Vua25vd24xEDAOBgNVBAsTB1Vua25vd24xGzAZBgNVBAMTEm10cy5jbGll
+bnQuc2lnbmluZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANItT07w
+87HLup/Waw+Ek7S6RlJEu9xn1UXVfL84dkLufy21Cklnyzxzd2op9FbUq68jalIa
+9hlguI9B7QqLplIcNOfhTWT+CFz9j0LL3PyOpl+/oDKJdwUPwtzz312fqfWz/vqZ
+Rz9cx0kmJlHUdz97WeD0Iem3px/4lM6nZtJWXF+0olZO5PxNnG/X8W9Y4qPT00FY
+AyHh0s2PUjbOuB9LAf4oWFxzNiluT5vifXLo0AR2u0m46dxxDbplX+G17/Ozs5Pv
+Ew/rBeUsLlgS862KClir16iw43TY6cTuw1fHUmqXuywrFwuKZUi5FX5yahGjKVxP
+oI/xg8QYDJASA5UCAwEAAaMhMB8wHQYDVR0OBBYEFFjGNNt5tDt6KqJcmo/HAv7F
+E2aeMA0GCSqGSIb3DQEBCwUAA4IBAQB1TvX7QbikPh/J2auRT+MWrScwDh9KQ/7c
+VysDKTqGFvQWm+t38hFwjy8DG6/GWzMmlvPzs+cpxxrU4wYINIki3q2XRMU5pNDS
+EWTqvcz+Of4WCNf0Kl6vaiQMo3AGhz36VemJeatiKTMnId9b//QKwG5qx9SGDKmY
+QOpm6Rtvai8oMhIX7Zgdv1pyVOIFvFbj8gC1U5krrwufSjTIZD8Vi0KCVYXLMXad
+BQj0IlNkxjIYgqj0oNhwemLs2vcXm/emYVjIekJVVgaY7E+pUTOkGQqJlLWP5p/G
+4QhF24m0cEw6CaJVbXOuxQPo7u27TCM8FM1SBZEaFdOtVVB8rxO5
+					</ds:X509Certificate>				
+				</ds:X509Data>
+			</ds:KeyInfo>
+		</md:KeyDescriptor>
+		<md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="http://52.198.228.221/post.php" index="0" isDefault="true" />
+	</md:SPSSODescriptor>
+	<md:Organization>
+		<md:OrganizationName xml:lang="en-us">
+			Sample Service Provider
+		</md:OrganizationName>
+		<md:OrganizationDisplayName xml:lang="en-us">
+			Sample Service Provider
+		</md:OrganizationDisplayName>
+		<md:OrganizationURL xml:lang="en-us">
+			http://52.198.228.221/
+		</md:OrganizationURL>
+	</md:Organization>
+	<md:ContactPerson contactType="technical">
+		<md:Company>cloes</md:Company>
+		<md:GivenName>cloes</md:GivenName>
+		<md:SurName>375600284@qq.com</md:SurName>
+	</md:ContactPerson>
+</md:EntityDescriptor>
