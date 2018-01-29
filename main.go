@@ -30,8 +30,8 @@ func main() {
 
 	type Authnrequest struct {
 		XMLName                       xml.Name `xml:"samlp:AuthnRequest"`
-		xmlnsSaml                     string   `xml:"xmlns:saml,attr"`
-		xmlnsSamlp                    string   `xml:"xmlns:samlp,attr"`
+		Saml                          string   `xml:"xmlns:saml,attr"`
+		Samlp                         string   `xml:"xmlns:samlp,attr"`
 		AssertionConsumerServiceIndex string   `xml:"AssertionConsumerServiceIndex,attr"`
 		Destination                   string   `xml:"Destination,attr"`
 		ID                            string   `xml:"ID,attr"`
@@ -57,8 +57,8 @@ func main() {
 	nameIDPolicy.AllowCreate = "true"
 	nameIDPolicy.Format = "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent"
 
-	auth.xmlnsSaml = "urn:oasis:names:tc:SAML:2.0:assertion"
-	auth.xmlnsSamlp = "urn:oasis:names:tc:SAML:2.0:protocol"
+	auth.Saml = "urn:oasis:names:tc:SAML:2.0:assertion"
+	auth.Samlp = "urn:oasis:names:tc:SAML:2.0:protocol"
 	auth.AssertionConsumerServiceIndex = "0"
 	auth.Destination = "https://mts.realme.govt.nz/logon-mts/mtsEntryPoint"
 	auth.ID = "a958a20e059c26d1cfb73163b1a6c4f9"
@@ -75,7 +75,7 @@ func main() {
 
 	//auth.Format = "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent"
 
-	tmp, err := xml.MarshalIndent(auth, "  ", "    ")
+	tmp, err := xml.MarshalIndent(auth, "", "  ")
 
 	//err := xml.Unmarshal([]byte(data), &v)
 	if err != nil {
@@ -83,6 +83,8 @@ func main() {
 	}
 
 	os.Stdout.Write(tmp)
+
+	//ioutil.WriteFile("./output.txt", tmp, 0666)
 
 	//fmt.Printf("Groups: %v\n", v.Groups)
 
