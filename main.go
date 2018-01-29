@@ -1,10 +1,19 @@
 package main
 
 import (
+	"bytes"
+	"compress/flate"
 	"encoding/xml"
 	"fmt"
-	"os"
+	"io/ioutil"
+	//"os"
+	"strings"
 	"time"
+
+	"github.com/satori/go.uuid"
+	"io"
+	"encoding/base64"
+	"net/url"
 )
 
 func main() {
@@ -54,6 +63,13 @@ func main() {
 	var authnContextClassRef AuthnContextClassRef
 
 	issueInstant := time.Now().UTC().Format(time.RFC3339)
+	id, err := uuid.NewV4()
+	if err != nil {
+		fmt.Printf("Something went wrong: %s", err)
+	}
+
+	idString := strings.Replace(id.String(), "-", "", -1)
+
 
 	issuer.IssuerValue = "http://myrealme.test/mts2/sp"
 
@@ -64,7 +80,7 @@ func main() {
 	auth.Samlp = "urn:oasis:names:tc:SAML:2.0:protocol"
 	auth.AssertionConsumerServiceIndex = "0"
 	auth.Destination = "https://mts.realme.govt.nz/logon-mts/mtsEntryPoint"
-	auth.ID = "a958a20e059c26d1cfb73163b1a6c4f9"
+	auth.ID = idString
 	auth.IssueInstant = issueInstant
 	auth.ProviderName = "http://myrealme.test/mts2/sp"
 	auth.Version = "2.0"
@@ -85,10 +101,27 @@ func main() {
 		fmt.Print(err)
 	}
 
-	os.Stdout.Write(tmp)
+	//os.Stdout.Write(tmp)
 
-	//ioutil.WriteFile("./output.txt", tmp, 0666)
+	ioutil.WriteFile("./output.txt", tmp, 0666)
 
 	//fmt.Printf("Groups: %v\n", v.Groups)
+
+	var deflateResult bytes.Buffer
+	flateWriter,err := flate.NewWriter(&deflateResult,flate.DefaultCompression)
+	if err != nil {
+		fmt.Printf("Something went wrong: %s", err)
+	}
+
+	fmt.Println(string(tmp))
+
+	io.Copy(flateWriter,strings.NewReader(string(tmp)))
+
+	flateWriter.Close()
+
+	baseEncondedContent := base64.StdEncoding.EncodeToString([]byte(deflateResult.String()))
+
+	QueryEscapedContent := url.QueryEscape(baseEncondedContent)
+	fmt.Println("SAMLRequest=" + QueryEscapedContent)
 
 }
