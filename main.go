@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"os"
+	"time"
 )
 
 func main() {
@@ -52,6 +53,8 @@ func main() {
 	var requestedAuthnContext RequestedAuthnContext
 	var authnContextClassRef AuthnContextClassRef
 
+	issueInstant := time.Now().UTC().Format(time.RFC3339)
+
 	issuer.IssuerValue = "http://myrealme.test/mts2/sp"
 
 	nameIDPolicy.AllowCreate = "true"
@@ -62,7 +65,7 @@ func main() {
 	auth.AssertionConsumerServiceIndex = "0"
 	auth.Destination = "https://mts.realme.govt.nz/logon-mts/mtsEntryPoint"
 	auth.ID = "a958a20e059c26d1cfb73163b1a6c4f9"
-	auth.IssueInstant = "2018.01.01"
+	auth.IssueInstant = issueInstant
 	auth.ProviderName = "http://myrealme.test/mts2/sp"
 	auth.Version = "2.0"
 	auth.Issuer = issuer
