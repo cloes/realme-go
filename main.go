@@ -1,127 +1,23 @@
 package main
 
 import (
-	"bytes"
-	"compress/flate"
-	"encoding/xml"
+	//"bytes"
+	//"compress/flate"
+	//"encoding/xml"
 	"fmt"
-	"io/ioutil"
+	//"io/ioutil"
 	//"os"
-	"strings"
-	"time"
-
-	"github.com/satori/go.uuid"
-	"io"
-	"encoding/base64"
-	"net/url"
+	//"strings"
+	//"time"
+	//"github.com/satori/go.uuid"
+	//"io"
+	//"encoding/base64"
+	//"net/url"
 )
 
 func main() {
-	type Issuer struct {
-		XMLName     xml.Name `xml:"saml:Issuer"`
-		IssuerValue string   `xml:",chardata"`
-	}
 
-	type NameIDPolicy struct {
-		XMLName     xml.Name `xml:"samlp:NameIDPolicy"`
-		AllowCreate string   `xml:"AllowCreate,attr"`
-		Format      string   `xml:"Format,attr"`
-	}
-
-	type AuthnContextClassRef struct {
-		XMLName                   xml.Name `xml:"saml:AuthnContextClassRef"`
-		AuthnContextClassRefValue string   `xml:",chardata"`
-	}
-
-	type RequestedAuthnContext struct {
-		XMLName              xml.Name `xml:"samlp:RequestedAuthnContext"`
-		AuthnContextClassRef AuthnContextClassRef
-	}
-
-	type Authnrequest struct {
-		XMLName                       xml.Name `xml:"samlp:AuthnRequest"`
-		Saml                          string   `xml:"xmlns:saml,attr"`
-		Samlp                         string   `xml:"xmlns:samlp,attr"`
-		AssertionConsumerServiceIndex string   `xml:"AssertionConsumerServiceIndex,attr"`
-		Destination                   string   `xml:"Destination,attr"`
-		ID                            string   `xml:"ID,attr"`
-		IssueInstant                  string   `xml:"IssueInstant,attr"`
-		ProviderName                  string   `xml:"ProviderName,attr"`
-		Version                       string   `xml:"Version,attr"`
-		Issuer                        Issuer
-		NameIDPolicy                  NameIDPolicy
-		RequestedAuthnContext         RequestedAuthnContext
-		//AllowCreate                   string `xml:"samlp:NameIDPolicy,aa,attr"`
-		//Format                        string `xml:"Format,attr"`
-	}
-
-	var auth Authnrequest
-	var issuer Issuer
-	var nameIDPolicy NameIDPolicy
-
-	var requestedAuthnContext RequestedAuthnContext
-	var authnContextClassRef AuthnContextClassRef
-
-	issueInstant := time.Now().UTC().Format(time.RFC3339)
-	id, err := uuid.NewV4()
-	if err != nil {
-		fmt.Printf("Something went wrong: %s", err)
-	}
-
-	idString := strings.Replace(id.String(), "-", "", -1)
-
-
-	issuer.IssuerValue = "http://myrealme.test/mts2/sp"
-
-	nameIDPolicy.AllowCreate = "true"
-	nameIDPolicy.Format = "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent"
-
-	auth.Saml = "urn:oasis:names:tc:SAML:2.0:assertion"
-	auth.Samlp = "urn:oasis:names:tc:SAML:2.0:protocol"
-	auth.AssertionConsumerServiceIndex = "0"
-	auth.Destination = "https://mts.realme.govt.nz/logon-mts/mtsEntryPoint"
-	auth.ID = idString
-	auth.IssueInstant = issueInstant
-	auth.ProviderName = "http://myrealme.test/mts2/sp"
-	auth.Version = "2.0"
-	auth.Issuer = issuer
-	auth.NameIDPolicy = nameIDPolicy
-
-	authnContextClassRef.AuthnContextClassRefValue = "urn:nzl:govt:ict:stds:authn:deployment:GLS:SAML:2.0:ac:classes:ModStrength"
-	requestedAuthnContext.AuthnContextClassRef = authnContextClassRef
-
-	auth.RequestedAuthnContext = requestedAuthnContext
-
-	//auth.Format = "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent"
-
-	tmp, err := xml.MarshalIndent(auth, "", "  ")
-
-	//err := xml.Unmarshal([]byte(data), &v)
-	if err != nil {
-		fmt.Print(err)
-	}
-
-	//os.Stdout.Write(tmp)
-
-	ioutil.WriteFile("./output.txt", tmp, 0666)
-
-	//fmt.Printf("Groups: %v\n", v.Groups)
-
-	var deflateResult bytes.Buffer
-	flateWriter,err := flate.NewWriter(&deflateResult,flate.DefaultCompression)
-	if err != nil {
-		fmt.Printf("Something went wrong: %s", err)
-	}
-
-	fmt.Println(string(tmp))
-
-	io.Copy(flateWriter,strings.NewReader(string(tmp)))
-
-	flateWriter.Close()
-
-	baseEncondedContent := base64.StdEncoding.EncodeToString([]byte(deflateResult.String()))
-
-	QueryEscapedContent := url.QueryEscape(baseEncondedContent)
-	fmt.Println("SAMLRequest=" + QueryEscapedContent)
+	SAMLresult := getSAMLRequestString()
+	fmt.Print(SAMLresult)
 
 }

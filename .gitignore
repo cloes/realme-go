@@ -2,3 +2,4 @@
 *.pem
 *.pfx
 output.txt
+*.exe
