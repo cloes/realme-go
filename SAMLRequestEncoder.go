@@ -12,11 +12,18 @@ import (
 	"time"
 	"github.com/satori/go.uuid"
 	"compress/flate"
+	"encoding/pem"
+	"crypto/x509"
+	"crypto"
+	"crypto/rsa"
+	"os"
+	"io/ioutil"
 )
 
 const (
 	DSAwithSHA1 = "http://www.w3.org/2000/09/xmldsig#dsa-sha1"
 	RSAwithSHA1 = "http://www.w3.org/2000/09/xmldsig#rsa-sha1"
+	idpUrl = "https://mts.realme.govt.nz/logon-mts/mtsEntryPoint?"
 )
 
 
@@ -141,4 +148,49 @@ func getSigAlgString(sigAlg string) string{
 	return sigAlgString
 }
 
+func getSignatureString(contentForSign string) string{
+	privateKey,_ := ioutil.ReadFile("mts_saml_sp.pem")
+	block, _ := pem.Decode(privateKey)
+	if block == nil {       // 失败情况
+		fmt.Print("get pem file fail")
+	}
 
+	private, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		fmt.Print("get pem file fail2")
+	}
+
+	h := crypto.Hash.New(crypto.SHA1)
+	h.Write([]byte(contentForSign))
+	hashed := h.Sum(nil)
+
+	// 进行rsa加密签名
+	signedData, err := rsa.SignPKCS1v15(nil, private.(*rsa.PrivateKey), crypto.SHA1, hashed)
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error from signing: %s\n", err)
+	}
+
+	baseEncodedData := base64.StdEncoding.EncodeToString(signedData)
+	urlEncodedData := url.QueryEscape(baseEncodedData)
+
+	return "Signature=" + urlEncodedData
+}
+
+func getQueryString(sigAlg string,relayState string) string{
+	var contentForSign string
+	SAMLRequestString := getSAMLRequestString()
+	sigAlgString := getSigAlgString(sigAlg)
+
+	if relayState != "" {
+		contentForSign = SAMLRequestString + "&" + "relayState=" + relayState + "&" + sigAlgString
+	}else {
+		contentForSign = SAMLRequestString + "&" + sigAlgString
+	}
+
+	signatureString := getSignatureString(contentForSign)
+
+	result := contentForSign + "&" + signatureString
+	return idpUrl + result
+
+}

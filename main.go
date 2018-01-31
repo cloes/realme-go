@@ -13,11 +13,15 @@ import (
 	//"io"
 	//"encoding/base64"
 	//"net/url"
+	"io/ioutil"
 )
 
 func main() {
 
-	SAMLresult := getSAMLRequestString()
-	fmt.Print(SAMLresult)
+	//SAMLresult := getSAMLRequestString()
+	//fmt.Print(SAMLresult)
+	output := getQueryString("rsa-sha1","")
+	fmt.Println(output)
+	ioutil.WriteFile("output_url",[]byte(output),666)
 
 }

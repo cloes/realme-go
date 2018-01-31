@@ -2,4 +2,5 @@
 *.pem
 *.pfx
 output.txt
+output_url
 *.exe
