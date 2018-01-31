@@ -81,6 +81,7 @@ func getAuthnrequestXML() string{
 	}
 
 	idString := strings.Replace(id.String(), "-", "", -1)
+	idString = "a" + idString[1:]
 
 	issuer.IssuerValue = "http://myrealme.test/mts2/sp"
 
@@ -104,6 +105,7 @@ func getAuthnrequestXML() string{
 	auth.RequestedAuthnContext = requestedAuthnContext
 
 	tmp, err := xml.MarshalIndent(auth, "", "  ")
+	//ioutil.WriteFile("origin_xml.xml",[]byte(tmp),666)
 	return string(tmp)
 }
 
