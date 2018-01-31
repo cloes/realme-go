@@ -14,6 +14,11 @@ import (
 	"compress/flate"
 )
 
+const (
+	DSAwithSHA1 = "http://www.w3.org/2000/09/xmldsig#dsa-sha1"
+	RSAwithSHA1 = "http://www.w3.org/2000/09/xmldsig#rsa-sha1"
+)
+
 
 //生成字符串格式的authnrequest
 func getAuthnrequestXML() string{
@@ -125,3 +130,15 @@ func getSAMLRequestString() string{
 	SAMLRequestResult := "SAMLRequest=" + QueryEscapedContent
 	return SAMLRequestResult
 }
+
+func getSigAlgString(sigAlg string) string{
+	var sigAlgString string
+	if sigAlg == "dsa-sha1" {
+		sigAlgString = "SigAlg=" + url.QueryEscape(DSAwithSHA1)
+	}else if sigAlg == "rsa-sha1" {
+		sigAlgString = "SigAlg=" + url.QueryEscape(RSAwithSHA1)
+	}
+	return sigAlgString
+}
+
+
