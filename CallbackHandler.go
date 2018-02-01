@@ -29,9 +29,41 @@ func getEncryptedContent(){
 		StatusCode StatusCode
 	}
 
+	type CipherValue struct{
+		XMLName xml.Name `xml:"CipherValue"`
+		Value string `xml:",chardata"`
+	}
+
+	type CipherData struct {
+		XMLName xml.Name `xml:"CipherData"`
+		CipherValue CipherValue
+	}
+
+	type EncryptedKey struct {
+		XMLName xml.Name `xml:"EncryptedKey"`
+		CipherData CipherData
+	}
+
+	type KeyInfo struct {
+		XMLName xml.Name `xml:"KeyInfo"`
+		EncryptedKey EncryptedKey
+	}
+
+	type EncryptedData struct {
+		XMLName xml.Name `xml:"EncryptedData"`
+		KeyInfo KeyInfo
+		CipherData CipherData
+	}
+
+	type EncryptedAssertion struct {
+		XMLName xml.Name `xml:"EncryptedAssertion"`
+		EncryptedData EncryptedData
+	}
+
 	type Response struct {
 		XMLName xml.Name `xml:"Response"`
 		Status Status
+		EncryptedAssertion EncryptedAssertion
 	}
 
 	v := Response{}
@@ -43,7 +75,14 @@ func getEncryptedContent(){
 	if err != nil {
 		fmt.Printf("Something went wrong: %s", err)
 	}
-	fmt.Println(v.Status.StatusCode.Value)
+
+	resposeStatusCode := v.Status.StatusCode.Value
+	fmt.Println(resposeStatusCode)
+
+	privateKey := v.EncryptedAssertion.EncryptedData.KeyInfo.EncryptedKey.CipherData.CipherValue.Value
+	fmt.Println(privateKey)
+
+
 
 
 }
