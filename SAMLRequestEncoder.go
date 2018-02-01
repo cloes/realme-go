@@ -105,7 +105,6 @@ func getAuthnrequestXML() string{
 	auth.RequestedAuthnContext = requestedAuthnContext
 
 	tmp, err := xml.MarshalIndent(auth, "", "  ")
-	//ioutil.WriteFile("origin_xml.xml",[]byte(tmp),666)
 	return string(tmp)
 }
 
@@ -179,7 +178,7 @@ func getSignatureString(contentForSign string) string{
 	return "Signature=" + urlEncodedData
 }
 
-func getQueryString(sigAlg string,relayState string) string{
+func GetQueryString(sigAlg string,relayState string) string{
 	var contentForSign string
 	SAMLRequestString := getSAMLRequestString()
 	sigAlgString := getSigAlgString(sigAlg)

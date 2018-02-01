@@ -20,7 +20,8 @@ func main() {
 
 	//SAMLresult := getSAMLRequestString()
 	//fmt.Print(SAMLresult)
-	output := getQueryString("rsa-sha1","")
+
+	output := GetQueryString("rsa-sha1","")
 	fmt.Println(output)
 	ioutil.WriteFile("output_url",[]byte(output),666)
 
