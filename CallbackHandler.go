@@ -13,11 +13,17 @@ func getSamlpResponseResult(XMLString string){
 	baseDecodedContent,_ := base64.StdEncoding.DecodeString(XMLString)
 	fmt.Println(baseDecodedContent)
 
-
 }
 
 
-func getEncryptedContent(){
+type ResponseContent struct {
+	responseStatusCode string
+	responsePrivateKey string
+	responseEncryptedContent string
+}
+
+//解析xml,返回statuscode、responsePrivateKey、responseEncryptedContent
+func getResponseContent() ResponseContent{
 
 	type StatusCode struct {
 		XMLName xml.Name `xml:"StatusCode"`
@@ -79,16 +85,24 @@ func getEncryptedContent(){
 	resposeStatusCode := v.Status.StatusCode.Value
 	fmt.Println(resposeStatusCode)
 
-	privateKey := v.EncryptedAssertion.EncryptedData.KeyInfo.EncryptedKey.CipherData.CipherValue.Value
-	fmt.Println(privateKey)
+	resposePrivateKey := v.EncryptedAssertion.EncryptedData.KeyInfo.EncryptedKey.CipherData.CipherValue.Value
+	BaseDecodedResposePrivateKey,_ := base64.StdEncoding.DecodeString(resposePrivateKey)
+	fmt.Println(resposePrivateKey)
 
-	EncryptedContent := v.EncryptedAssertion.EncryptedData.CipherData.CipherValue.Value
-	fmt.Println(EncryptedContent)
+	resposeEncryptedContent := v.EncryptedAssertion.EncryptedData.CipherData.CipherValue.Value
+	BaseDecodedresposeEncryptedContent,_ := base64.StdEncoding.DecodeString(resposeEncryptedContent)
+	fmt.Println(resposeEncryptedContent)
 
+	responseContent := ResponseContent{
+		responseStatusCode:resposeStatusCode,
+		responsePrivateKey:string(BaseDecodedResposePrivateKey),
+		responseEncryptedContent:string(BaseDecodedresposeEncryptedContent),
+	}
 
+	return responseContent
 }
 
 func main(){
-	getEncryptedContent()
+	getResponseContent()
 
 }
