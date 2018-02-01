@@ -82,7 +82,8 @@ func getEncryptedContent(){
 	privateKey := v.EncryptedAssertion.EncryptedData.KeyInfo.EncryptedKey.CipherData.CipherValue.Value
 	fmt.Println(privateKey)
 
-
+	EncryptedContent := v.EncryptedAssertion.EncryptedData.CipherData.CipherValue.Value
+	fmt.Println(EncryptedContent)
 
 
 }
