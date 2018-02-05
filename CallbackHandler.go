@@ -10,6 +10,8 @@ import (
 	"crypto/rsa"
 	//"crypto/rand"
 	"strings"
+	"crypto/aes"
+	"crypto/cipher"
 )
 
 //接收返回的xml
@@ -24,7 +26,9 @@ func getSamlpResponseResult(XMLString string){
 type ResponseContent struct {
 	responseStatusCode string
 	responsePrivateKey string
-	responseEncryptedContent string
+	AESEncryptedContent string
+	AESKey string
+	iv string
 }
 
 //解析xml,返回statuscode、responsePrivateKey、responseEncryptedContent
@@ -97,19 +101,22 @@ func getResponseContent() ResponseContent{
 
 	resposeEncryptedContent := v.EncryptedAssertion.EncryptedData.CipherData.CipherValue.Value
 	BaseDecodedresposeEncryptedContent,_ := base64.StdEncoding.DecodeString(resposeEncryptedContent)
+	iv := BaseDecodedresposeEncryptedContent[:8]
+	AESEncryptedContent := BaseDecodedresposeEncryptedContent[8:]
 	//fmt.Println(BaseDecodedresposeEncryptedContent)
 
 	responseContent := ResponseContent{
 		responseStatusCode:resposeStatusCode,
 		responsePrivateKey:string(BaseDecodedResposePrivateKey),
-		responseEncryptedContent:string(BaseDecodedresposeEncryptedContent),
+		AESEncryptedContent:string(AESEncryptedContent),
+		iv:string(iv),
 	}
 
 	return responseContent
 }
 
 
-func getAESKEY(aesKey string)([]byte, error){
+func getAESKEY(RSAEncryptContent string)([]byte, error){
 	privateKey,err := ioutil.ReadFile("private_key.txt")
 	if err != nil {
 		fmt.Printf("Something went wrong: %s", err)
@@ -135,17 +142,33 @@ func getAESKEY(aesKey string)([]byte, error){
 		fmt.Printf("Something went wrong: %s", err)
 	}
 	*/
-	//return rsa.DecryptPKCS1v15(rand.Reader, priv.(*rsa.PrivateKey), []byte(aesKey))
-	return rsa.DecryptPKCS1v15(nil, priv.(*rsa.PrivateKey), []byte(aesKey))
+	//return rsa.DecryptPKCS1v15(rand.Reader, priv.(*rsa.PrivateKey), []byte(RSAEncryptContent))
+	return rsa.DecryptPKCS1v15(nil, priv.(*rsa.PrivateKey), []byte(RSAEncryptContent))
+
+}
+
+func getAESDecryptContent(responseContent ResponseContent)[]byte{
+	block, err := aes.NewCipher([]byte(responseContent.AESKey))
+	if err != nil {
+		fmt.Printf("Something went wrong: %s", err)
+	}
+	//blockSize := block.BlockSize()
+	blockMode := cipher.NewCBCDecrypter(block, []byte(responseContent.iv))
+	origData := make([]byte, len(responseContent.AESEncryptedContent))
+	// origData := crypted
+	blockMode.CryptBlocks(origData, []byte(responseContent.AESEncryptedContent))
+	origData = PKCS5UnPadding(origData)
+	//origData = ZeroUnPadding(origData)
+	return origData
 
 }
 
 func main(){
 	responseContent := getResponseContent()
-	tmp,err := getAESKEY(responseContent.responsePrivateKey)
+	AESKey,err := getAESKEY(responseContent.responsePrivateKey)
 	if err != nil {
 		fmt.Printf("Something went wrong: %s", err)
 	}
-	fmt.Println(string(tmp))
+	responseContent.AESKey = string(AESKey)
 
 }
