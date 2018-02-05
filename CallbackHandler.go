@@ -9,6 +9,7 @@ import (
 	"crypto/x509"
 	"crypto/rsa"
 	"crypto/rand"
+	"strings"
 )
 
 //接收返回的xml
@@ -90,12 +91,13 @@ func getResponseContent() ResponseContent{
 	fmt.Println(resposeStatusCode)
 
 	resposePrivateKey := v.EncryptedAssertion.EncryptedData.KeyInfo.EncryptedKey.CipherData.CipherValue.Value
+	resposePrivateKey = strings.Replace(resposePrivateKey," ", "",-1)
 	BaseDecodedResposePrivateKey,_ := base64.StdEncoding.DecodeString(resposePrivateKey)
 	fmt.Println(BaseDecodedResposePrivateKey)
 
 	resposeEncryptedContent := v.EncryptedAssertion.EncryptedData.CipherData.CipherValue.Value
 	BaseDecodedresposeEncryptedContent,_ := base64.StdEncoding.DecodeString(resposeEncryptedContent)
-	fmt.Println(BaseDecodedresposeEncryptedContent)
+	//fmt.Println(BaseDecodedresposeEncryptedContent)
 
 	responseContent := ResponseContent{
 		responseStatusCode:resposeStatusCode,
@@ -118,8 +120,8 @@ func getAESKEY()([]byte, error){
 		fmt.Println("Something went wrong")
 	}
 
-	fmt.Println(block.Type)
-	fmt.Println(block.Headers)
+	//fmt.Println(block.Type)
+	//fmt.Println(block.Headers)
 
 	priv, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 	if err != nil {
