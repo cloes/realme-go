@@ -8,7 +8,7 @@ import (
 	"encoding/pem"
 	"crypto/x509"
 	"crypto/rsa"
-	"crypto/rand"
+	//"crypto/rand"
 	"strings"
 )
 
@@ -93,7 +93,7 @@ func getResponseContent() ResponseContent{
 	resposePrivateKey := v.EncryptedAssertion.EncryptedData.KeyInfo.EncryptedKey.CipherData.CipherValue.Value
 	resposePrivateKey = strings.Replace(resposePrivateKey," ", "",-1)
 	BaseDecodedResposePrivateKey,_ := base64.StdEncoding.DecodeString(resposePrivateKey)
-	fmt.Println(BaseDecodedResposePrivateKey)
+	//fmt.Println(BaseDecodedResposePrivateKey)
 
 	resposeEncryptedContent := v.EncryptedAssertion.EncryptedData.CipherData.CipherValue.Value
 	BaseDecodedresposeEncryptedContent,_ := base64.StdEncoding.DecodeString(resposeEncryptedContent)
@@ -109,7 +109,7 @@ func getResponseContent() ResponseContent{
 }
 
 
-func getAESKEY()([]byte, error){
+func getAESKEY(aesKey string)([]byte, error){
 	privateKey,err := ioutil.ReadFile("private_key.txt")
 	if err != nil {
 		fmt.Printf("Something went wrong: %s", err)
@@ -128,18 +128,21 @@ func getAESKEY()([]byte, error){
 		fmt.Printf("Something went wrong: %s", err)
 	}
 
+	/*
 	data,err := ioutil.ReadFile("aes_key.txt")
 	data2,_ := base64.StdEncoding.DecodeString(string(data))
 	if err != nil {
 		fmt.Printf("Something went wrong: %s", err)
 	}
-	return rsa.DecryptPKCS1v15(rand.Reader, priv.(*rsa.PrivateKey), data2)
+	*/
+	//return rsa.DecryptPKCS1v15(rand.Reader, priv.(*rsa.PrivateKey), []byte(aesKey))
+	return rsa.DecryptPKCS1v15(nil, priv.(*rsa.PrivateKey), []byte(aesKey))
 
 }
 
 func main(){
-	//responseContent := getResponseContent()
-	tmp,err := getAESKEY()
+	responseContent := getResponseContent()
+	tmp,err := getAESKEY(responseContent.responsePrivateKey)
 	if err != nil {
 		fmt.Printf("Something went wrong: %s", err)
 	}
