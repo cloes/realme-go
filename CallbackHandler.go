@@ -100,9 +100,10 @@ func getResponseContent() ResponseContent{
 	//fmt.Println(BaseDecodedResposePrivateKey)
 
 	resposeEncryptedContent := v.EncryptedAssertion.EncryptedData.CipherData.CipherValue.Value
+	resposeEncryptedContent = strings.Replace(resposeEncryptedContent," ", "",-1)
 	BaseDecodedresposeEncryptedContent,_ := base64.StdEncoding.DecodeString(resposeEncryptedContent)
-	iv := BaseDecodedresposeEncryptedContent[:8]
-	AESEncryptedContent := BaseDecodedresposeEncryptedContent[8:]
+	iv := BaseDecodedresposeEncryptedContent[:16]
+	AESEncryptedContent := BaseDecodedresposeEncryptedContent[16:]
 	//fmt.Println(BaseDecodedresposeEncryptedContent)
 
 	responseContent := ResponseContent{
@@ -157,8 +158,10 @@ func getAESDecryptContent(responseContent ResponseContent)[]byte{
 	origData := make([]byte, len(responseContent.AESEncryptedContent))
 	// origData := crypted
 	blockMode.CryptBlocks(origData, []byte(responseContent.AESEncryptedContent))
-	origData = PKCS5UnPadding(origData)
+	//origData = PKCS5UnPadding(origData)
 	//origData = ZeroUnPadding(origData)
+	fmt.Println(origData)
+	fmt.Println([]byte(">"))
 	return origData
 
 }
@@ -170,5 +173,7 @@ func main(){
 		fmt.Printf("Something went wrong: %s", err)
 	}
 	responseContent.AESKey = string(AESKey)
+
+	getAESDecryptContent(responseContent)
 
 }
