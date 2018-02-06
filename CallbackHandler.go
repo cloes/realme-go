@@ -14,15 +14,6 @@ import (
 	"crypto/cipher"
 )
 
-//接收返回的xml
-func getSamlpResponseResult(XMLString string){
-
-	baseDecodedContent,_ := base64.StdEncoding.DecodeString(XMLString)
-	fmt.Println(baseDecodedContent)
-
-}
-
-
 type ResponseContent struct {
 	responseStatusCode string
 	responsePrivateKey string
@@ -31,9 +22,12 @@ type ResponseContent struct {
 	iv string
 }
 
-//解析xml,返回statuscode、responsePrivateKey、responseEncryptedContent
-func getResponseContent() ResponseContent{
 
+/*
+ * 解析xml,返回ResponseContent结构体
+ *
+ */
+func getResponseContent(data []byte) ResponseContent{
 	type StatusCode struct {
 		XMLName xml.Name `xml:"StatusCode"`
 		Value string `xml:"Value,attr"`
@@ -82,11 +76,7 @@ func getResponseContent() ResponseContent{
 	}
 
 	v := Response{}
-	data, err:= ioutil.ReadFile("samlResponse.txt")
-	if err != nil {
-		fmt.Printf("Something went wrong: %s", err)
-	}
-	err = xml.Unmarshal(data, &v)
+	err := xml.Unmarshal(data, &v)
 	if err != nil {
 		fmt.Printf("Something went wrong: %s", err)
 	}
@@ -97,14 +87,13 @@ func getResponseContent() ResponseContent{
 	resposePrivateKey := v.EncryptedAssertion.EncryptedData.KeyInfo.EncryptedKey.CipherData.CipherValue.Value
 	resposePrivateKey = strings.Replace(resposePrivateKey," ", "",-1)
 	BaseDecodedResposePrivateKey,_ := base64.StdEncoding.DecodeString(resposePrivateKey)
-	//fmt.Println(BaseDecodedResposePrivateKey)
 
 	resposeEncryptedContent := v.EncryptedAssertion.EncryptedData.CipherData.CipherValue.Value
 	resposeEncryptedContent = strings.Replace(resposeEncryptedContent," ", "",-1)
 	BaseDecodedresposeEncryptedContent,_ := base64.StdEncoding.DecodeString(resposeEncryptedContent)
+
 	iv := BaseDecodedresposeEncryptedContent[:16]
 	AESEncryptedContent := BaseDecodedresposeEncryptedContent[16:]
-	//fmt.Println(BaseDecodedresposeEncryptedContent)
 
 	responseContent := ResponseContent{
 		responseStatusCode:resposeStatusCode,
@@ -116,7 +105,9 @@ func getResponseContent() ResponseContent{
 	return responseContent
 }
 
-
+/**
+ * 对SAML Response中的key进行RSA解密,获取AES的秘钥
+ */
 func getAESKEY(RSAEncryptContent string)([]byte, error){
 	privateKey,err := ioutil.ReadFile("private_key.txt")
 	if err != nil {
@@ -124,30 +115,21 @@ func getAESKEY(RSAEncryptContent string)([]byte, error){
 	}
 	block, _ := pem.Decode(privateKey)
 	if block == nil {
-		//return nil, err.New("private key error!")
 		fmt.Println("Something went wrong")
 	}
-
-	//fmt.Println(block.Type)
-	//fmt.Println(block.Headers)
 
 	priv, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 	if err != nil {
 		fmt.Printf("Something went wrong: %s", err)
 	}
 
-	/*
-	data,err := ioutil.ReadFile("aes_key.txt")
-	data2,_ := base64.StdEncoding.DecodeString(string(data))
-	if err != nil {
-		fmt.Printf("Something went wrong: %s", err)
-	}
-	*/
-	//return rsa.DecryptPKCS1v15(rand.Reader, priv.(*rsa.PrivateKey), []byte(RSAEncryptContent))
 	return rsa.DecryptPKCS1v15(nil, priv.(*rsa.PrivateKey), []byte(RSAEncryptContent))
-
 }
 
+
+/*
+ * 使用AES秘钥对SAML Response的内容进行解密
+ */
 func getAESDecryptContent(responseContent ResponseContent)[]byte{
 	block, err := aes.NewCipher([]byte(responseContent.AESKey))
 	if err != nil {
@@ -156,32 +138,31 @@ func getAESDecryptContent(responseContent ResponseContent)[]byte{
 	//blockSize := block.BlockSize()
 	blockMode := cipher.NewCBCDecrypter(block, []byte(responseContent.iv))
 	origData := make([]byte, len(responseContent.AESEncryptedContent))
-	// origData := crypted
 	blockMode.CryptBlocks(origData, []byte(responseContent.AESEncryptedContent))
 	origData = PKCS5UnPadding(origData)
-	//origData = ZeroUnPadding(origData)
-	fmt.Println(string(origData))
-	//ioutil.WriteFile("AESDEcrypt",origData,666)
-	return origData
 
+	return origData
 }
 
-
+/**
+ * 删除AES加密前的Padding
+ */
 func PKCS5UnPadding(origData []byte) []byte {
 	length := len(origData)
-	// 去掉最后一个字节 unpadding 次
 	unpadding := int(origData[length-1])
 	return origData[:(length - unpadding)]
 }
 
 func main(){
-	responseContent := getResponseContent()
+	data, _:= ioutil.ReadFile("samlResponse.txt")
+
+	responseContent := getResponseContent(data)
 	AESKey,err := getAESKEY(responseContent.responsePrivateKey)
 	if err != nil {
 		fmt.Printf("Something went wrong: %s", err)
 	}
 	responseContent.AESKey = string(AESKey)
 
-	getAESDecryptContent(responseContent)
-
+	tmp := getAESDecryptContent(responseContent)
+	fmt.Println(string(tmp))
 }
