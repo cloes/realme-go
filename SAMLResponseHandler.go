@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"encoding/base64"
 	"encoding/xml"
-	"io/ioutil"
 	"encoding/pem"
 	"crypto/x509"
 	"crypto/rsa"
