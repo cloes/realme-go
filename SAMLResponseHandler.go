@@ -1,4 +1,4 @@
-package main
+package RealmeGOSDK
 
 import (
 	"fmt"
@@ -153,6 +153,7 @@ func PKCS5UnPadding(origData []byte) []byte {
 	return origData[:(length - unpadding)]
 }
 
+/*
 func main(){
 	data, _:= ioutil.ReadFile("samlResponse.txt")
 
@@ -166,3 +167,4 @@ func main(){
 	tmp := getAESDecryptContent(responseContent)
 	fmt.Println(string(tmp))
 }
+*/
