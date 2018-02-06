@@ -22,8 +22,8 @@ type ResponseContent struct {
 }
 
 type DecryptedResponse struct {
-	statusCode string
-	nameID string
+	StatusCode string
+	NameID string
 }
 
 
@@ -88,7 +88,7 @@ func getResponseContent(data []byte) ResponseContent{
 	resposeStatusCode := v.Status.StatusCode.Value
 	lastIndex := strings.LastIndex(resposeStatusCode,":")
 	resposeStatusCode = resposeStatusCode[lastIndex+1:]
-	fmt.Println(resposeStatusCode)
+	//fmt.Println(resposeStatusCode)
 
 	resposePrivateKey := v.EncryptedAssertion.EncryptedData.KeyInfo.EncryptedKey.CipherData.CipherValue.Value
 	resposePrivateKey = strings.Replace(resposePrivateKey," ", "",-1)
@@ -114,11 +114,13 @@ func getResponseContent(data []byte) ResponseContent{
 /**
  * 对SAML Response中的key进行RSA解密,获取AES的秘钥
  */
-func getAESKEY(RSAEncryptContent string)([]byte, error){
+func getAESKEY(RSAEncryptContent string,privateKey []byte)([]byte, error){
+	/*
 	privateKey,err := ioutil.ReadFile("private_key.txt")
 	if err != nil {
 		fmt.Printf("Something went wrong: %s", err)
 	}
+	*/
 	block, _ := pem.Decode(privateKey)
 	if block == nil {
 		fmt.Println("Something went wrong")
@@ -191,24 +193,22 @@ func getNameID(AESDecryptContent []byte) string{
 /**
  * SDK的主入口，输入xml的内容，返回解密后的DecryptedResponse
  */
-func GetResponseDecryptedContent(data []byte) DecryptedResponse{
+func GetResponseDecryptedContent(data, RSAPrivateKey []byte) DecryptedResponse{
 	//data, _:= ioutil.ReadFile("samlResponse.txt")
 
 	responseContent := getResponseContent(data)
-	AESKey,err := getAESKEY(responseContent.responsePrivateKey)
+	AESKey,err := getAESKEY(responseContent.responsePrivateKey,RSAPrivateKey)
 	if err != nil {
 		fmt.Printf("Something went wrong: %s", err)
 	}
 	responseContent.AESKey = string(AESKey)
 
 	AESDecryptContent := getAESDecryptContent(responseContent)
-	//fmt.Println(string(AESDecryptContent))
-	ioutil.WriteFile("responseAESCOntent",AESDecryptContent,666)
 	nameID := getNameID(AESDecryptContent)
-	fmt.Println(nameID)
+
 	decryptedResponse := DecryptedResponse{
-		statusCode:responseContent.responseStatusCode,
-		nameID:nameID,
+		StatusCode:responseContent.responseStatusCode,
+		NameID:nameID,
 	}
 
 	return decryptedResponse
