@@ -3,7 +3,6 @@ package RealmeGOSDK
 import (
 	"fmt"
 	"encoding/xml"
-	//"io/ioutil"
 	"bytes"
 	"io"
 	"strings"

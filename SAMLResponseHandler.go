@@ -8,7 +8,6 @@ import (
 	"encoding/pem"
 	"crypto/x509"
 	"crypto/rsa"
-	//"crypto/rand"
 	"strings"
 	"crypto/aes"
 	"crypto/cipher"
