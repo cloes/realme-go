@@ -158,12 +158,20 @@ func getAESDecryptContent(responseContent ResponseContent)[]byte{
 	origData := make([]byte, len(responseContent.AESEncryptedContent))
 	// origData := crypted
 	blockMode.CryptBlocks(origData, []byte(responseContent.AESEncryptedContent))
-	//origData = PKCS5UnPadding(origData)
+	origData = PKCS5UnPadding(origData)
 	//origData = ZeroUnPadding(origData)
-	fmt.Println(origData)
-	fmt.Println([]byte(">"))
+	fmt.Println(string(origData))
+	//ioutil.WriteFile("AESDEcrypt",origData,666)
 	return origData
 
+}
+
+
+func PKCS5UnPadding(origData []byte) []byte {
+	length := len(origData)
+	// 去掉最后一个字节 unpadding 次
+	unpadding := int(origData[length-1])
+	return origData[:(length - unpadding)]
 }
 
 func main(){
