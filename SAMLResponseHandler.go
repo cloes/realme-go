@@ -22,6 +22,11 @@ type ResponseContent struct {
 	iv string
 }
 
+type DecryptedResponse struct {
+	statusCode string
+	nameID string
+}
+
 
 /*
  * 解析xml,返回ResponseContent结构体
@@ -82,6 +87,8 @@ func getResponseContent(data []byte) ResponseContent{
 	}
 
 	resposeStatusCode := v.Status.StatusCode.Value
+	lastIndex := strings.LastIndex(resposeStatusCode,":")
+	resposeStatusCode = resposeStatusCode[lastIndex+1:]
 	fmt.Println(resposeStatusCode)
 
 	resposePrivateKey := v.EncryptedAssertion.EncryptedData.KeyInfo.EncryptedKey.CipherData.CipherValue.Value
@@ -153,9 +160,40 @@ func PKCS5UnPadding(origData []byte) []byte {
 	return origData[:(length - unpadding)]
 }
 
-/*
-func main(){
-	data, _:= ioutil.ReadFile("samlResponse.txt")
+
+/**
+ * 获取AES加密内容中的NameID属性
+ */
+func getNameID(AESDecryptContent []byte) string{
+	type NameID struct {
+		XMLName xml.Name `xml:"NameID"`
+		Value string `xml:",chardata"`
+	}
+
+	type Subject struct {
+		XMLName xml.Name `xml:"Subject"`
+		NameID NameID
+	}
+
+	type Assertion struct {
+		XMLName xml.Name `xml:"Assertion"`
+		Subject Subject
+	}
+
+	v := Assertion{}
+	err := xml.Unmarshal(AESDecryptContent, &v)
+	if err != nil {
+		fmt.Printf("Something went wrong: %s", err)
+	}
+	return v.Subject.NameID.Value
+}
+
+
+/**
+ * SDK的主入口，输入xml的内容，返回解密后的DecryptedResponse
+ */
+func GetResponseDecryptedContent(data []byte) DecryptedResponse{
+	//data, _:= ioutil.ReadFile("samlResponse.txt")
 
 	responseContent := getResponseContent(data)
 	AESKey,err := getAESKEY(responseContent.responsePrivateKey)
@@ -164,7 +202,15 @@ func main(){
 	}
 	responseContent.AESKey = string(AESKey)
 
-	tmp := getAESDecryptContent(responseContent)
-	fmt.Println(string(tmp))
+	AESDecryptContent := getAESDecryptContent(responseContent)
+	//fmt.Println(string(AESDecryptContent))
+	ioutil.WriteFile("responseAESCOntent",AESDecryptContent,666)
+	nameID := getNameID(AESDecryptContent)
+	fmt.Println(nameID)
+	decryptedResponse := DecryptedResponse{
+		statusCode:responseContent.responseStatusCode,
+		nameID:nameID,
+	}
+
+	return decryptedResponse
 }
-*/
