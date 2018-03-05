@@ -1,72 +1,77 @@
 package RealmeGOSDK
 
 import (
-	"fmt"
-	"encoding/xml"
 	"bytes"
-	"io"
-	"strings"
-	"encoding/base64"
-	"net/url"
-	"time"
-	"github.com/satori/go.uuid"
 	"compress/flate"
-	"encoding/pem"
-	"crypto/x509"
 	"crypto"
 	"crypto/rsa"
-	"os"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/pem"
+	"encoding/xml"
+	"errors"
+	"io"
 	"io/ioutil"
+	"net/url"
+	"strings"
+	"time"
+
+	"github.com/satori/go.uuid"
 )
 
 const (
 	DSAwithSHA1 = "http://www.w3.org/2000/09/xmldsig#dsa-sha1"
 	RSAwithSHA1 = "http://www.w3.org/2000/09/xmldsig#rsa-sha1"
-	idpUrl = "https://mts.realme.govt.nz/logon-mts/mtsEntryPoint?"
+	idpUrl      = "https://mts.realme.govt.nz/logon-mts/mtsEntryPoint?"
 )
 
+type ServiceProvider struct {
+	SigAlg     string
+	Issuer     string
+	Provider   string
+	RelayState string
+}
 
-//生成字符串格式的authnrequest
-func getAuthnrequestXML() string{
-	type Issuer struct {
-		XMLName     xml.Name `xml:"saml:Issuer"`
-		IssuerValue string   `xml:",chardata"`
-	}
+type Issuer struct {
+	XMLName     xml.Name `xml:"saml:Issuer"`
+	IssuerValue string   `xml:",chardata"`
+}
 
-	type NameIDPolicy struct {
-		XMLName     xml.Name `xml:"samlp:NameIDPolicy"`
-		AllowCreate string   `xml:"AllowCreate,attr"`
-		Format      string   `xml:"Format,attr"`
-	}
+type NameIDPolicy struct {
+	XMLName     xml.Name `xml:"samlp:NameIDPolicy"`
+	AllowCreate string   `xml:"AllowCreate,attr"`
+	Format      string   `xml:"Format,attr"`
+}
 
-	type AuthnContextClassRef struct {
-		XMLName                   xml.Name `xml:"saml:AuthnContextClassRef"`
-		AuthnContextClassRefValue string   `xml:",chardata"`
-	}
+type AuthnContextClassRef struct {
+	XMLName                   xml.Name `xml:"saml:AuthnContextClassRef"`
+	AuthnContextClassRefValue string   `xml:",chardata"`
+}
 
-	type RequestedAuthnContext struct {
-		XMLName              xml.Name `xml:"samlp:RequestedAuthnContext"`
-		AuthnContextClassRef AuthnContextClassRef
-	}
+type RequestedAuthnContext struct {
+	XMLName              xml.Name `xml:"samlp:RequestedAuthnContext"`
+	AuthnContextClassRef AuthnContextClassRef
+}
 
-	type Authnrequest struct {
-		XMLName                       xml.Name `xml:"samlp:AuthnRequest"`
-		Saml                          string   `xml:"xmlns:saml,attr"`
-		Samlp                         string   `xml:"xmlns:samlp,attr"`
-		AssertionConsumerServiceIndex string   `xml:"AssertionConsumerServiceIndex,attr"`
-		Destination                   string   `xml:"Destination,attr"`
-		ID                            string   `xml:"ID,attr"`
-		IssueInstant                  string   `xml:"IssueInstant,attr"`
-		ProviderName                  string   `xml:"ProviderName,attr"`
-		Version                       string   `xml:"Version,attr"`
-		Issuer                        Issuer
-		NameIDPolicy                  NameIDPolicy
-		RequestedAuthnContext         RequestedAuthnContext
-		//AllowCreate                   string `xml:"samlp:NameIDPolicy,aa,attr"`
-		//Format                        string `xml:"Format,attr"`
-	}
+type AuthnRequest struct {
+	XMLName                       xml.Name `xml:"samlp:AuthnRequest"`
+	Saml                          string   `xml:"xmlns:saml,attr"`
+	Samlp                         string   `xml:"xmlns:samlp,attr"`
+	AssertionConsumerServiceIndex string   `xml:"AssertionConsumerServiceIndex,attr"`
+	Destination                   string   `xml:"Destination,attr"`
+	ID                            string   `xml:"ID,attr"`
+	IssueInstant                  string   `xml:"IssueInstant,attr"`
+	ProviderName                  string   `xml:"ProviderName,attr"`
+	Version                       string   `xml:"Version,attr"`
+	Issuer                        Issuer
+	NameIDPolicy                  NameIDPolicy
+	RequestedAuthnContext         RequestedAuthnContext
+	//AllowCreate                   string `xml:"samlp:NameIDPolicy,aa,attr"`
+	//Format                        string `xml:"Format,attr"`
+}
 
-	var auth Authnrequest
+func (sp *ServiceProvider) getAuthnrequestXML() (string, error) {
+	var auth AuthnRequest
 	var issuer Issuer
 	var nameIDPolicy NameIDPolicy
 
@@ -76,13 +81,13 @@ func getAuthnrequestXML() string{
 	issueInstant := time.Now().UTC().Format(time.RFC3339)
 	id, err := uuid.NewV4()
 	if err != nil {
-		fmt.Printf("Something went wrong: %s", err)
+		return "", err
 	}
 
 	idString := strings.Replace(id.String(), "-", "", -1)
 	idString = "a" + idString[1:]
 
-	issuer.IssuerValue = "http://myrealme.test/mts2/sp"
+	issuer.IssuerValue = sp.Issuer
 
 	nameIDPolicy.AllowCreate = "true"
 	nameIDPolicy.Format = "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent"
@@ -93,7 +98,7 @@ func getAuthnrequestXML() string{
 	auth.Destination = "https://mts.realme.govt.nz/logon-mts/mtsEntryPoint"
 	auth.ID = idString
 	auth.IssueInstant = issueInstant
-	auth.ProviderName = "http://myrealme.test/mts2/sp"
+	auth.ProviderName = sp.Provider
 	auth.Version = "2.0"
 	auth.Issuer = issuer
 	auth.NameIDPolicy = nameIDPolicy
@@ -104,27 +109,21 @@ func getAuthnrequestXML() string{
 	auth.RequestedAuthnContext = requestedAuthnContext
 
 	tmp, err := xml.MarshalIndent(auth, "", "  ")
-	return string(tmp)
-}
-
-
-func defalte(authnrequestXML string) string{
-	var deflateResult bytes.Buffer
-	flateWriter,err := flate.NewWriter(&deflateResult,flate.DefaultCompression)
 	if err != nil {
-		fmt.Printf("Something went wrong: %s", err)
+		return "", err
 	}
-
-	io.Copy(flateWriter,strings.NewReader(authnrequestXML))
-
-	flateWriter.Close()
-	return deflateResult.String()
+	return string(tmp), nil
 }
 
-
-func getSAMLRequestString() string{
-	authnrequestXML := getAuthnrequestXML()
-	deflateResult := defalte(authnrequestXML)
+func (sp *ServiceProvider) getSAMLRequestString() (string, error) {
+	authnrequestXML, err := sp.getAuthnrequestXML()
+	if err != nil {
+		return "", err
+	}
+	deflateResult, err := defalte(authnrequestXML)
+	if err != nil {
+		return "", err
+	}
 
 	//err := xml.Unmarshal([]byte(data), &v)
 	//os.Stdout.Write(tmp)
@@ -135,62 +134,93 @@ func getSAMLRequestString() string{
 
 	QueryEscapedContent := url.QueryEscape(baseEncondedContent)
 	SAMLRequestResult := "SAMLRequest=" + QueryEscapedContent
-	return SAMLRequestResult
+	return SAMLRequestResult, nil
 }
 
-func getSigAlgString(sigAlg string) string{
-	var sigAlgString string
-	if sigAlg == "dsa-sha1" {
-		sigAlgString = "SigAlg=" + url.QueryEscape(DSAwithSHA1)
-	}else if sigAlg == "rsa-sha1" {
-		sigAlgString = "SigAlg=" + url.QueryEscape(RSAwithSHA1)
+func (sp *ServiceProvider) getSignatureString(contentForSign string) (string, error) {
+	// TODO: put prviate key to ServiceProvider
+	privateKey, err := ioutil.ReadFile("mts_saml_sp.pem")
+	if err != nil {
+		return "", err
 	}
-	return sigAlgString
-}
-
-func getSignatureString(contentForSign string) string{
-	privateKey,_ := ioutil.ReadFile("mts_saml_sp.pem")
 	block, _ := pem.Decode(privateKey)
-	if block == nil {       // 失败情况
-		fmt.Print("get pem file fail")
+	if block == nil { // 失败情况
+		return "", errors.New("get pem file fail")
 	}
 
 	private, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 	if err != nil {
-		fmt.Print("get pem file fail2")
+		return "", err
 	}
 
 	h := crypto.Hash.New(crypto.SHA1)
-	h.Write([]byte(contentForSign))
+	_, err = h.Write([]byte(contentForSign))
+	if err != nil {
+		return "", err
+	}
 	hashed := h.Sum(nil)
 
 	// 进行rsa加密签名
 	signedData, err := rsa.SignPKCS1v15(nil, private.(*rsa.PrivateKey), crypto.SHA1, hashed)
-
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error from signing: %s\n", err)
+		//fmt.Fprintf(os.Stderr, "Error from signing: %s\n", err)
+		return "", err
 	}
 
 	baseEncodedData := base64.StdEncoding.EncodeToString(signedData)
 	urlEncodedData := url.QueryEscape(baseEncodedData)
 
-	return "Signature=" + urlEncodedData
+	return "Signature=" + urlEncodedData, nil
 }
 
-func GetQueryString(sigAlg string,relayState string) string{
+func (sp *ServiceProvider) GetQueryString() (string, error) {
 	var contentForSign string
-	SAMLRequestString := getSAMLRequestString()
-	sigAlgString := getSigAlgString(sigAlg)
+	SAMLRequestString, err := sp.getSAMLRequestString()
+	if err != nil {
+		return "", err
+	}
 
-	if relayState != "" {
-		contentForSign = SAMLRequestString + "&" + "relayState=" + relayState + "&" + sigAlgString
-	}else {
+	sigAlgString := getSigAlgString(sp.SigAlg)
+	if sp.RelayState != "" {
+		contentForSign = SAMLRequestString + "&" + "relayState=" + sp.RelayState + "&" + sigAlgString
+	} else {
 		contentForSign = SAMLRequestString + "&" + sigAlgString
 	}
 
-	signatureString := getSignatureString(contentForSign)
+	signatureString, err := sp.getSignatureString(contentForSign)
+	if err != nil {
+		return "", err
+	}
 
 	result := contentForSign + "&" + signatureString
-	return idpUrl + result
+	return idpUrl + result, nil
+}
 
+func defalte(authnrequestXML string) (string, error) {
+	var deflateResult bytes.Buffer
+	flateWriter, err := flate.NewWriter(&deflateResult, flate.DefaultCompression)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = io.Copy(flateWriter, strings.NewReader(authnrequestXML))
+	if err != nil {
+		return "", err
+	}
+
+	err = flateWriter.Close()
+	if err != nil {
+		return "", err
+	}
+	return deflateResult.String(), nil
+}
+
+func getSigAlgString(sigAlg string) string {
+	var sigAlgString string
+	if sigAlg == "dsa-sha1" {
+		sigAlgString = "SigAlg=" + url.QueryEscape(DSAwithSHA1)
+	} else if sigAlg == "rsa-sha1" {
+		sigAlgString = "SigAlg=" + url.QueryEscape(RSAwithSHA1)
+	}
+	return sigAlgString
 }
