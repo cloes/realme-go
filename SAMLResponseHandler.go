@@ -8,7 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"encoding/xml"
-	"fmt"
+	"errors"
 	"strings"
 )
 
@@ -29,7 +29,7 @@ type DecryptedResponse struct {
  * 解析xml,返回ResponseContent结构体
  *
  */
-func getResponseContent(data []byte) ResponseContent {
+func getResponseContent(data []byte) (ResponseContent, error) {
 	type StatusCode struct {
 		XMLName xml.Name `xml:"StatusCode"`
 		Value   string   `xml:"Value,attr"`
@@ -80,7 +80,7 @@ func getResponseContent(data []byte) ResponseContent {
 	v := Response{}
 	err := xml.Unmarshal(data, &v)
 	if err != nil {
-		fmt.Printf("Something went wrong: %s", err)
+		return ResponseContent{}, err
 	}
 
 	resposeStatusCode := v.Status.StatusCode.Value
@@ -90,23 +90,27 @@ func getResponseContent(data []byte) ResponseContent {
 
 	resposePrivateKey := v.EncryptedAssertion.EncryptedData.KeyInfo.EncryptedKey.CipherData.CipherValue.Value
 	resposePrivateKey = strings.Replace(resposePrivateKey, " ", "", -1)
-	BaseDecodedResposePrivateKey, _ := base64.StdEncoding.DecodeString(resposePrivateKey)
+	BaseDecodedResposePrivateKey, err := base64.StdEncoding.DecodeString(resposePrivateKey)
+	if err != nil {
+		return ResponseContent{}, err
+	}
 
 	resposeEncryptedContent := v.EncryptedAssertion.EncryptedData.CipherData.CipherValue.Value
 	resposeEncryptedContent = strings.Replace(resposeEncryptedContent, " ", "", -1)
-	BaseDecodedresposeEncryptedContent, _ := base64.StdEncoding.DecodeString(resposeEncryptedContent)
+	BaseDecodedresposeEncryptedContent, err := base64.StdEncoding.DecodeString(resposeEncryptedContent)
+	if err != nil {
+		return ResponseContent{}, err
+	}
 
 	iv := BaseDecodedresposeEncryptedContent[:16]
 	AESEncryptedContent := BaseDecodedresposeEncryptedContent[16:]
 
-	responseContent := ResponseContent{
+	return ResponseContent{
 		responseStatusCode:  resposeStatusCode,
 		responsePrivateKey:  string(BaseDecodedResposePrivateKey),
 		AESEncryptedContent: string(AESEncryptedContent),
 		iv:                  string(iv),
-	}
-
-	return responseContent
+	}, nil
 }
 
 /**
@@ -119,14 +123,14 @@ func getAESKEY(RSAEncryptContent string, privateKey []byte) ([]byte, error) {
 			fmt.Printf("Something went wrong: %s", err)
 		}
 	*/
-	block, _ := pem.Decode(privateKey)
+	block, rest := pem.Decode(privateKey)
 	if block == nil {
-		fmt.Println("Something went wrong")
+		return rest, errors.New("load private key error")
 	}
 
 	priv, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 	if err != nil {
-		fmt.Printf("Something went wrong: %s", err)
+		return []byte{}, err
 	}
 
 	return rsa.DecryptPKCS1v15(nil, priv.(*rsa.PrivateKey), []byte(RSAEncryptContent))
@@ -135,10 +139,10 @@ func getAESKEY(RSAEncryptContent string, privateKey []byte) ([]byte, error) {
 /*
  * 使用AES秘钥对SAML Response的内容进行解密
  */
-func getAESDecryptContent(responseContent ResponseContent) []byte {
+func getAESDecryptContent(responseContent ResponseContent) ([]byte, error) {
 	block, err := aes.NewCipher([]byte(responseContent.AESKey))
 	if err != nil {
-		fmt.Printf("Something went wrong: %s", err)
+		return []byte{}, err
 	}
 	//blockSize := block.BlockSize()
 	blockMode := cipher.NewCBCDecrypter(block, []byte(responseContent.iv))
@@ -146,7 +150,7 @@ func getAESDecryptContent(responseContent ResponseContent) []byte {
 	blockMode.CryptBlocks(origData, []byte(responseContent.AESEncryptedContent))
 	origData = PKCS5UnPadding(origData)
 
-	return origData
+	return origData, nil
 }
 
 /**
@@ -161,7 +165,7 @@ func PKCS5UnPadding(origData []byte) []byte {
 /**
  * 获取AES加密内容中的NameID属性
  */
-func getNameID(AESDecryptContent []byte) string {
+func getNameID(AESDecryptContent []byte) (string, error) {
 	type NameID struct {
 		XMLName xml.Name `xml:"NameID"`
 		Value   string   `xml:",chardata"`
@@ -180,31 +184,40 @@ func getNameID(AESDecryptContent []byte) string {
 	v := Assertion{}
 	err := xml.Unmarshal(AESDecryptContent, &v)
 	if err != nil {
-		fmt.Printf("Something went wrong: %s", err)
+		return "", err
 	}
-	return v.Subject.NameID.Value
+	return v.Subject.NameID.Value, nil
 }
 
-/**
- * SDK的主入口，输入xml的内容，返回解密后的DecryptedResponse
- */
-func GetResponseDecryptedContent(data, RSAPrivateKey []byte) DecryptedResponse {
-	//data, _:= ioutil.ReadFile("samlResponse.txt")
+// GetResponseDecryptedContent SDK的主入口，输入xml的内容，返回解密后的DecryptedResponse
+func GetResponseDecryptedContent(data, RSAPrivateKey []byte) (DecryptedResponse, error) {
+	// RSAPrivateKey, err := ioutil.ReadFile("PathOfPrivateKey")
+	// if err != nil {
+	// 	return DecryptedResponse{}, err
+	// }
 
-	responseContent := getResponseContent(data)
+	responseContent, err := getResponseContent(data)
+	if err != nil {
+		return DecryptedResponse{}, err
+	}
+
 	AESKey, err := getAESKEY(responseContent.responsePrivateKey, RSAPrivateKey)
 	if err != nil {
-		fmt.Printf("Something went wrong: %s", err)
+		return DecryptedResponse{}, err
 	}
 	responseContent.AESKey = string(AESKey)
 
-	AESDecryptContent := getAESDecryptContent(responseContent)
-	nameID := getNameID(AESDecryptContent)
-
-	decryptedResponse := DecryptedResponse{
-		StatusCode: responseContent.responseStatusCode,
-		NameID:     nameID,
+	AESDecryptContent, err := getAESDecryptContent(responseContent)
+	if err != nil {
+		return DecryptedResponse{}, err
+	}
+	nameID, err := getNameID(AESDecryptContent)
+	if err != nil {
+		return DecryptedResponse{}, err
 	}
 
-	return decryptedResponse
+	return DecryptedResponse{
+		StatusCode: responseContent.responseStatusCode,
+		NameID:     nameID,
+	}, nil
 }

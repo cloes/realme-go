@@ -30,7 +30,7 @@ type ServiceProvider struct {
 	Issuer             string //"http://myrealme.test/mts2/sp"
 	ProviderName       string //"http://myrealme.test/mts2/sp"
 	RelayState         string
-	PrivateKeyFilePath string
+	PrivateKeyFilePath string //"mts_saml_sp.pem"
 }
 
 type Issuer struct {
