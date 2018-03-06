@@ -26,10 +26,11 @@ const (
 )
 
 type ServiceProvider struct {
-	SigAlg     string
-	Issuer     string
-	Provider   string
-	RelayState string
+	SigAlg             string //dsa-sha1 or rsa-sha1
+	Issuer             string //"http://myrealme.test/mts2/sp"
+	ProviderName       string //"http://myrealme.test/mts2/sp"
+	RelayState         string
+	PrivateKeyFilePath string
 }
 
 type Issuer struct {
@@ -70,6 +71,30 @@ type AuthnRequest struct {
 	//Format                        string `xml:"Format,attr"`
 }
 
+//GetQueryString return realme AuthnRequest
+func (sp *ServiceProvider) GetQueryString() (string, error) {
+	var contentForSign string
+	SAMLRequestString, err := sp.getSAMLRequestString()
+	if err != nil {
+		return "", err
+	}
+
+	sigAlgString := getSigAlgString(sp.SigAlg)
+	if sp.RelayState != "" {
+		contentForSign = SAMLRequestString + "&" + "relayState=" + sp.RelayState + "&" + sigAlgString
+	} else {
+		contentForSign = SAMLRequestString + "&" + sigAlgString
+	}
+
+	signatureString, err := sp.getSignatureString(contentForSign)
+	if err != nil {
+		return "", err
+	}
+
+	result := contentForSign + "&" + signatureString
+	return idpUrl + result, nil
+}
+
 func (sp *ServiceProvider) getAuthnrequestXML() (string, error) {
 	var auth AuthnRequest
 	var issuer Issuer
@@ -98,7 +123,7 @@ func (sp *ServiceProvider) getAuthnrequestXML() (string, error) {
 	auth.Destination = "https://mts.realme.govt.nz/logon-mts/mtsEntryPoint"
 	auth.ID = idString
 	auth.IssueInstant = issueInstant
-	auth.ProviderName = sp.Provider
+	auth.ProviderName = sp.ProviderName
 	auth.Version = "2.0"
 	auth.Issuer = issuer
 	auth.NameIDPolicy = nameIDPolicy
@@ -138,13 +163,12 @@ func (sp *ServiceProvider) getSAMLRequestString() (string, error) {
 }
 
 func (sp *ServiceProvider) getSignatureString(contentForSign string) (string, error) {
-	// TODO: put prviate key to ServiceProvider
-	privateKey, err := ioutil.ReadFile("mts_saml_sp.pem")
+	privateKey, err := ioutil.ReadFile(sp.PrivateKeyFilePath)
 	if err != nil {
 		return "", err
 	}
 	block, _ := pem.Decode(privateKey)
-	if block == nil { // 失败情况
+	if block == nil {
 		return "", errors.New("get pem file fail")
 	}
 
@@ -160,7 +184,7 @@ func (sp *ServiceProvider) getSignatureString(contentForSign string) (string, er
 	}
 	hashed := h.Sum(nil)
 
-	// 进行rsa加密签名
+	// rsa sign
 	signedData, err := rsa.SignPKCS1v15(nil, private.(*rsa.PrivateKey), crypto.SHA1, hashed)
 	if err != nil {
 		//fmt.Fprintf(os.Stderr, "Error from signing: %s\n", err)
@@ -171,29 +195,6 @@ func (sp *ServiceProvider) getSignatureString(contentForSign string) (string, er
 	urlEncodedData := url.QueryEscape(baseEncodedData)
 
 	return "Signature=" + urlEncodedData, nil
-}
-
-func (sp *ServiceProvider) GetQueryString() (string, error) {
-	var contentForSign string
-	SAMLRequestString, err := sp.getSAMLRequestString()
-	if err != nil {
-		return "", err
-	}
-
-	sigAlgString := getSigAlgString(sp.SigAlg)
-	if sp.RelayState != "" {
-		contentForSign = SAMLRequestString + "&" + "relayState=" + sp.RelayState + "&" + sigAlgString
-	} else {
-		contentForSign = SAMLRequestString + "&" + sigAlgString
-	}
-
-	signatureString, err := sp.getSignatureString(contentForSign)
-	if err != nil {
-		return "", err
-	}
-
-	result := contentForSign + "&" + signatureString
-	return idpUrl + result, nil
 }
 
 func defalte(authnrequestXML string) (string, error) {
